@@ -1,0 +1,3 @@
+time="2023-06-28 21:41:48" level=info msg="/Users/zhaodeng/GolandProjects/Easy-Drive/static/video/user_15e22a5d328cb/搞笑视频.mp4" func=easy-drive/pkg/utils/fileUtil.MergeChunks file="/Users/zhaodeng/GolandProjects/Easy-Drive/pkg/utils/fileUtil/upload.go:145"
+time="2023-06-28 21:41:48" level=info msg="/Users/zhaodeng/GolandProjects/Easy-Drive/static/temp/user_15e22a5d328cb/搞笑视频.mp4" func=easy-drive/pkg/utils/fileUtil.MergeChunks file="/Users/zhaodeng/GolandProjects/Easy-Drive/pkg/utils/fileUtil/upload.go:157"
+time="2023-06-28 21:41:48" level=info msg="文件合并完成: static/video/user_15e22a5d328cb/搞笑视频.mp4" func="easy-drive/service.(*FileService).UploadFileService" file="/Users/zhaodeng/GolandProjects/Easy-Drive/service/file.go:325"

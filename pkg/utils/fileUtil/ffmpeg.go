@@ -3,6 +3,7 @@ package fileUtil
 import (
 	"easy-drive/consts"
 	"easy-drive/pkg/utils"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -11,6 +12,7 @@ import (
 	"strings"
 )
 
+// GenerateThumbnail 生成缩略图
 func GenerateThumbnail(inputFilePath, outputFileName string) error {
 	// 获取工作目录
 	workingDir, err := os.Getwd()
@@ -20,20 +22,21 @@ func GenerateThumbnail(inputFilePath, outputFileName string) error {
 	}
 
 	// 获取文件类型
-	fileType := GetFileType(inputFilePath)
-
-	// 获取输入文件的目录和文件名
-	dir := filepath.Dir(inputFilePath)
+	fileType, flag := FindCategoryKey(inputFilePath)
+	if !flag {
+		utils.LogrusObj.Infoln("未找到该文件对应的文件类型")
+		return errors.New("未找到该文件对应的文件类型")
+	}
 
 	// 拼接输出文件的完整路径
 	inputFilePath = filepath.Join(workingDir, inputFilePath)
-	thumbnailPath := filepath.Join(workingDir, filepath.Join(dir, outputFileName))
+	thumbnailPath := filepath.Join(workingDir, outputFileName)
 
 	// 根据文件类型，确定命令
 	var cmd *exec.Cmd
-	if fileType == consts.Video.Index() {
+	if fileType == consts.VIDEO.Index() {
 		cmd = exec.Command("ffmpeg", "-i", inputFilePath, "-vf", "thumbnail="+strconv.Itoa(consts.CompressImageLength)+":-1", "-frames:v", "1", thumbnailPath)
-	} else if fileType == consts.Image.Index() {
+	} else if fileType == consts.IMAGE.Index() {
 		cmd = exec.Command("ffmpeg", "-i", inputFilePath, "-vf", "scale="+strconv.Itoa(consts.CompressImageLength)+":"+strconv.Itoa(-1), "-frames:v", "1", thumbnailPath)
 	}
 	utils.LogrusObj.Infoln("执行缩略图的命令:", cmd)
@@ -47,6 +50,7 @@ func GenerateThumbnail(inputFilePath, outputFileName string) error {
 	return nil
 }
 
+// GenerateThumbnailName 生成缩略图名称
 func GenerateThumbnailName(originalName string) string {
 	extension := filepath.Ext(originalName)
 	baseName := strings.TrimSuffix(originalName, extension)
@@ -60,6 +64,7 @@ func GenerateThumbnailName(originalName string) string {
 	return thumbnailName
 }
 
+// SplitVideo 切割视频文件
 func SplitVideo(videoFilePath string) error {
 	// 获取视频文件名和目录路径
 	videoFileName := GetFileNameWithoutExtension(videoFilePath)
@@ -81,7 +86,7 @@ func SplitVideo(videoFilePath string) error {
 
 	// 在目录下生成索引文件 index.m3u8 和切片
 	outputDir := videoDirPath + "/" + videoFileName
-	err = generateHLSFiles(intermediateFilePath, outputDir)
+	err = generateHLSFiles(intermediateFilePath, outputDir, videoFileName)
 	if err != nil {
 		return err
 	}
@@ -111,11 +116,11 @@ func convertVideoToTS(inputFile string, outputFile string) error {
 }
 
 // 使用 FFmpeg 生成索引文件 index.m3u8 和切片
-func generateHLSFiles(inputFile string, outputDir string) error {
+func generateHLSFiles(inputFile string, outputDir string, videoFileName string) error {
 	workDir, _ := os.Getwd()
 	inputFilePath := filepath.Join(workDir, inputFile)
 	outputDir = filepath.Join(workDir, outputDir)
-	cmd := exec.Command("ffmpeg", "-i", inputFilePath, "-c:v", "copy", "-c:a", "copy", "-map", "0", "-f", "segment", "-segment_time", "30", "-segment_list", outputDir+"/index.m3u8", "-segment_format", "mpegts", outputDir+"/%d.ts")
+	cmd := exec.Command("ffmpeg", "-i", inputFilePath, "-c:v", "copy", "-c:a", "copy", "-map", "0", "-f", "segment", "-segment_time", "30", "-segment_list", outputDir+"/index.m3u8", "-segment_format", "mpegts", outputDir+"/"+videoFileName+"_%d.ts")
 	err := cmd.Run()
 	utils.LogrusObj.Infoln("生成索引文件 index.m3u8 和切片的命令:", err)
 	if err != nil {

@@ -17,8 +17,15 @@ var MsgFlags = map[int]string{
 	UserSessionExpiration:    "登录超时，请重新登录",
 	UpdateAvatarError:        "上传图片失败",
 	ErrorJsonType:            "Json类型不匹配",
+	UserSaveShareError:       "用户保存错误",
 
 	UserStoreSpaceError: "用户存储空间不足",
+	FileNameExistsError: "此目录下该文件名已存在，请重新尝试！",
+	FileNotExistsError:  "不存在该记录",
+	ShareFileExpired:    "分享链接不存在或已经失效！",
+	ShareCodeError:      "分享码错误",
+
+	OverLimitUserSpaceError: "超过当前系统限制最大内存",
 }
 
 func GetMsg(code int) string {

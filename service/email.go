@@ -10,9 +10,11 @@ import (
 	"easy-drive/repositry/cache"
 	"easy-drive/repositry/dao"
 	"easy-drive/types"
+	"errors"
+	"fmt"
 	"gopkg.in/mail.v2"
+	"gorm.io/gorm"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -35,6 +37,7 @@ func SendEmail(ctx context.Context, req *types.EmailServiceReq) (resp interface{
 	var mailText string
 
 	// 发送邮件类型
+	systemDao := dao.NewSystemDaoByDB(userDao.DB)
 	switch req.Type {
 	case 0: // 用户注册逻辑
 		if flag {
@@ -43,16 +46,37 @@ func SendEmail(ctx context.Context, req *types.EmailServiceReq) (resp interface{
 			return ctl.RespError(code), nil
 		}
 
+		// 获取注册邮件内容
+		// TODO:这里需求优化,太奇葩了
+		title, err := systemDao.GetSystemSettingById(consts.UserRegisterTiTleSettingId)
+		content, err := systemDao.GetSystemSettingById(consts.UserRegisterContentSettingId)
+		if err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				utils.LogrusObj.Error("获取用户注册页面模版出错：", err)
+				return ctl.RespError(), nil
+			}
+		}
+
 		// 注册邮件内容
-		mailText = strings.Join([]string{"您正在进行Easy-Driver注册，验证码：", captcha, "\n注意：验证码有效期仅有", strconv.Itoa(consts.EmailCaptchaExpiration), "分钟"}, "")
+		mailText = fmt.Sprintf(title.Text+"\n"+content.Text, captcha, strconv.Itoa(consts.EmailCaptchaExpiration))
 	case 1: // 修改密码逻辑
 		if !flag {
 			// 邮箱尚未注册
 			code = e.UserNotRegisterError
 			return ctl.RespError(code), nil
 		}
+
+		// 获取注册邮件内容
+		rSetting, err := systemDao.GetSystemSettingById(consts.UserRePwdSettingId)
+		if err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				utils.LogrusObj.Error("获取用户注册页面模版出错：", err)
+				return ctl.RespError(), nil
+			}
+		}
+
 		// 忘记密码
-		mailText = strings.Join([]string{"您正在进行Easy-Driver密码找回，验证码：", captcha, "\n注意：验证码有效期仅有", strconv.Itoa(consts.EmailCaptchaExpiration), "分钟"}, "")
+		mailText = fmt.Sprintf(rSetting.Text, captcha, strconv.Itoa(consts.EmailCaptchaExpiration))
 	default:
 		utils.LogrusObj.Info("未知邮件发送类型:", req.Type)
 	}

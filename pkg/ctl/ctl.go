@@ -12,8 +12,8 @@ func RespSuccess(codes ...int) *types.Response {
 	}
 	return &types.Response{
 		Code:   code,
-		Status: e.GetMsg(code),
-		Info:   "请求成功",
+		Status: "请求成功",
+		Info:   e.GetMsg(code),
 	}
 }
 

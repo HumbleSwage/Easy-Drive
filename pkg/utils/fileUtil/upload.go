@@ -12,9 +12,11 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 )
 
+// UploadAvatarToLocalStatic 上传头像到本地
 func UploadAvatarToLocalStatic(file multipart.File, fileSize int64, userId string) (string, error) {
 	// 上传路径拼接
 	pConfig := conf.Conf.UploadPath
@@ -54,91 +56,61 @@ func UploadAvatarToLocalStatic(file multipart.File, fileSize int64, userId strin
 
 }
 
-func ChunkedFileToLocalTemp(userId, fileName string, file multipart.File, fileHeader *multipart.FileHeader) (string, error) {
-	uConfig := conf.Conf.UploadPath
-
-	// 分块文件保存的具体文件夹：分块文件统一保存在临时文件分区
-	basePath := uConfig.TempPath + "user_" + userId + "/" + fileName + "/"
-	if !dirIsExist(basePath) {
-		CreateDir(basePath)
-	}
-
-	// 分块文件名
-	chunkPath := basePath + commonUtil.GenerateChunkName()
-
-	// 检查文件
-	_, err := os.Stat(chunkPath)
-	if os.IsNotExist(err) {
-		if _, err = os.Create(chunkPath); err != nil {
-			return "", err
-		}
-	}
-
-	// 覆盖
-	f, err := os.Create(chunkPath)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	// 读取文件内容
-	content := make([]byte, fileHeader.Size)
-	if _, err = file.Read(content); err != nil {
-		return "", err
-	}
-
-	// 写入文件
-	if _, err := f.Write(content); err != nil {
-		return "", err
-	}
-
-	return "user_" + "/" + fileName + "/", err
-}
-
-func GetUniqueFileName(fileName, userId string) (string, string) {
+// GetFilePath 获取文件路径
+func GetFilePath(fileId, userId, fileName string) string {
 	// 文件配置
 	uConfig := conf.Conf.UploadPath
-	extension := GetFileExtension(fileName)
+
+	// 获取类别key
+	categoryKey, flag := FindCategoryKey(fileName)
+	if !flag {
+		utils.LogrusObj.Infoln("未收录该类别文件")
+	}
 
 	// 获取文件夹
 	uploadPath := ""
-	switch GetFileType(fileName) {
-	case consts.Video.Index():
+	switch categoryKey {
+	case consts.VIDEO.Index():
 		uploadPath = uConfig.VideoPath
-	case consts.Image.Index():
+	case consts.MUSIC.Index():
+		uploadPath = uConfig.MusicPath
+	case consts.IMAGE.Index():
 		uploadPath = uConfig.ImagePath
-	case consts.Doc.Index():
+	case consts.PDF.Index():
 		uploadPath = uConfig.DocPath
+	case consts.WORD.Index():
+		uploadPath = uConfig.DocPath
+	case consts.EXCEL.Index():
+		uploadPath = uConfig.DocPath
+	case consts.TXT.Index():
+		uploadPath = uConfig.DocPath
+	case consts.PROGRAM.Index():
+		uploadPath = uConfig.ProgramPath
+	case consts.ZIP.Index():
+		uploadPath = uConfig.ZipPath
 	default:
 		uploadPath = uConfig.OthersPath
 	}
 
-	// 文件夹是否存在
-	basePath := uploadPath + "user_" + userId
+	fileName = fileId + "." + GetFileExtension(fileName)
+
+	// 用户文件夹
+	basePath := uploadPath + "user_" + userId + "/"
 	if !dirIsExist(basePath) {
 		CreateDir(basePath)
-		return basePath + "/" + fileName, fileName
 	}
 
-	// 无后缀文件名
-	fileNameWithoutExtension := strings.TrimSuffix(fileName, "."+extension)
+	// 确定文件路径
+	filePath := filepath.Join(basePath, fileName)
 
-	// 新文件名
-	newFileName := fileName
-	counter := 1
-	for fileExists(newFileName, basePath) {
-		newFileName = fmt.Sprintf("%s(%d).%s", fileNameWithoutExtension, counter, extension)
-		counter++
-	}
-
-	// 文件地址
-	newFilePath := basePath + "/" + newFileName
-
-	return newFilePath, newFileName
+	return filePath
 }
 
-func MergeChunks(userId, fileName, filePath string) error {
+// MergeChunks 合并分块文件
+func MergeChunks(userId, fileId, filePath string) error {
+	// 加载配置
 	uConfig := conf.Conf.UploadPath
+
 	// 加上工作目录
 	workDir, _ := os.Getwd()
 	filePath = filepath.Join(workDir, filePath)
@@ -153,8 +125,8 @@ func MergeChunks(userId, fileName, filePath string) error {
 	defer targetFile.Close()
 
 	// 分块保存分区
-	chunksDir := filepath.Join(workDir, uConfig.TempPath+"user_"+userId+"/"+fileName+"/")
-	utils.LogrusObj.Infoln(chunksDir)
+	chunksDir := filepath.Join(workDir, uConfig.TempPath+"user_"+userId+"/"+fileId+"/")
+
 	// 获取对应所有分块
 	chunkFiles, err := getChunkFiles(chunksDir)
 	if err != nil {
@@ -214,21 +186,6 @@ func MergeChunks(userId, fileName, filePath string) error {
 	return err
 }
 
-func GetFileTypeNumber(fileName string) (int, error) {
-	extension := GetFileExtension(fileName)
-	// 将扩展名转换为小写，以便进行不区分大小写的比较
-	extension = strings.ToLower(extension)
-
-	// 查找扩展名在 TypeStr 切片中的索引
-	for i, fileTypeStr := range consts.TypeStr {
-		if fileTypeStr == extension {
-			return i, nil
-		}
-	}
-
-	return -1, fmt.Errorf("未找到文件类型数字：%s", extension)
-}
-
 // 检查目录是否存在
 func dirIsExist(path string) bool {
 	s, err := os.Stat(path)
@@ -257,19 +214,19 @@ func GetFileExtension(fileName string) string {
 }
 
 // GetFileType 根据文件后缀名确定文件类型
-func GetFileType(fileName string) int {
-	extension := GetFileExtension(fileName)
-	switch strings.ToLower(extension) {
-	case "mp4", "avi", "mkv":
-		return consts.Video.Index()
-	case "jpg", "jpeg", "png", "gif":
-		return consts.Image.Index()
-	case "doc", "docx", "pdf", "txt":
-		return consts.Doc.Index()
-	default:
-		return consts.Others.Index()
-	}
-}
+//func GetFileType(fileName string) int {
+//	extension := GetFileExtension(fileName)
+//	switch strings.ToLower(extension) {
+//	case "mp4", "avi", "mkv":
+//		return consts.Video.Index()
+//	case "jpg", "jpeg", "png", "gif":
+//		return consts.Image.Index()
+//	case "doc", "docx", "pdf", "txt":
+//		return consts.Doc.Index()
+//	default:
+//		return consts.Others.Index()
+//	}
+//}
 
 // 检查文件是否存在
 func fileExists(fileName, directory string) bool {
@@ -326,11 +283,11 @@ func getTimestampFromFilename(filename string) int64 {
 	return timestamp
 }
 
-func GetTempFilePath(fileName, userId string) string {
+func GetTempFilePath(fileId, userId string) string {
 	uConfig := conf.Conf.UploadPath
 
 	// 分块文件保存的具体文件夹：分块文件统一保存在临时文件分区
-	basePath := uConfig.TempPath + "user_" + userId + "/" + fileName + "/"
+	basePath := uConfig.TempPath + "user_" + userId + "/" + fileId + "/"
 	if !dirIsExist(basePath) {
 		CreateDir(basePath)
 	}
@@ -346,4 +303,46 @@ func GetFileNameWithoutExtension(filePath string) string {
 	fileNameWithExtension := filepath.Base(filePath)
 	fileName := strings.TrimSuffix(fileNameWithExtension, filepath.Ext(fileNameWithExtension))
 	return fileName
+}
+
+func FindTypeKey(fileName string) (int, bool) {
+	extension := GetFileExtension(fileName)
+	for key, extensions := range consts.TypeMapping {
+		for _, ext := range extensions {
+			if ext == extension {
+				return key, true
+			}
+		}
+	}
+	return -1, false
+}
+
+func FindCategoryKey(fileName string) (int, bool) {
+	extension := GetFileExtension(fileName)
+	for key, extensions := range consts.TypeMapping {
+		for _, ext := range extensions {
+			if ext == extension {
+				if key >= consts.PDF.Index() && key <= consts.TXT.Index() {
+					return consts.DocCategory.Index(), true
+				} else if key >= consts.PROGRAM.Index() && key <= consts.OthersCategory.Index() {
+					return consts.OthersCategory.Index(), true
+				}
+				return key, true
+			}
+		}
+	}
+	return -1, false
+}
+
+func GetFileNameIndex(fileName string) int {
+	re := regexp.MustCompile(`\((\d+)\)[^.]*\.`) // 正则表达式匹配括号内的数字，并排除`.`符号之前的内容
+	matches := re.FindStringSubmatch(fileName)
+	if len(matches) > 1 {
+		indexStr := matches[1]
+		index, err := strconv.Atoi(indexStr)
+		if err == nil {
+			return index
+		}
+	}
+	return 0 // 如果没有匹配到索引号，则默认为0
 }

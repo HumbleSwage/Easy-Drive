@@ -37,11 +37,14 @@ type PhotoPath struct {
 }
 
 type UploadPath struct {
-	Host       string `yaml:"host"`
-	TempPath   string `yaml:"tempPath"`
-	AvatarPath string `yaml:"avatarPath"`
-	VideoPath  string `yaml:"videoPath"`
-	ImagePath  string `yaml:"imagePath"`
-	DocPath    string `yaml:"docPath"`
-	OthersPath string `yaml:"othersPath"`
+	Host        string `yaml:"host"`
+	TempPath    string `yaml:"tempPath"`
+	AvatarPath  string `yaml:"avatarPath"`
+	VideoPath   string `yaml:"videoPath"`
+	MusicPath   string `yaml:"musicPath"`
+	ImagePath   string `yaml:"imagePath"`
+	DocPath     string `yaml:"docPath"`
+	ProgramPath string `yaml:"programPath"`
+	ZipPath     string `yaml:"zipPath"`
+	OthersPath  string `yaml:"othersPath"`
 }

@@ -3,6 +3,7 @@ package handler
 import (
 	"easy-drive/pkg/ctl"
 	"easy-drive/pkg/e"
+	"easy-drive/pkg/utils"
 	"easy-drive/service"
 	"easy-drive/types"
 	"github.com/gin-gonic/gin"
@@ -146,13 +147,21 @@ func GetUserAvatarHandler() gin.HandlerFunc {
 			return
 		}
 
+		// 断言
+		data, ok := resp.([]byte)
+		if !ok {
+			utils.LogrusObj.Error("断言数据出错")
+			ctx.JSON(http.StatusInternalServerError, ctl.RespError())
+			return
+		}
+
 		// 因为直接返回图片，所以需要设置返回头
 		ctx.Writer.Header().Set("Cache-Control", "no-cache,no-store,must-revalidate")
 		ctx.Writer.Header().Set("Pragma", "no-cache")
 		ctx.Writer.Header().Set("Expires", "0")
 		//ctx.Writer.Header().Set("Content-Type", "application/octet-stream")
 
-		_, err = ctx.Writer.Write(resp.([]byte))
+		_, err = ctx.Writer.Write(data)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, ErrorResponse(err))
 			return

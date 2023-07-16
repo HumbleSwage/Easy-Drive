@@ -1,0 +1,40 @@
+server:
+  domain: Easy-Drive
+  version: 1.0
+  appEnv: test
+  httpPort: :7090
+
+mysql:
+  default:
+    dialect: mysql
+    dbHost: 139.155.56.240
+    dbPort: 3306
+    dbName: easy_drive
+    userName: root
+    password: 9n2q3C5Qpy4R1xroot
+    charset: utf8mb4
+
+redis:
+  redisDbName: 4
+  redisHost: 139.155.56.240
+  redisPort: 6379
+  redisPassword: 563338
+  redisNetwork: tcp
+
+email:
+  validEmail: http://localhost:4000/#/user/valid-email/
+  smtpHost: smtp.163.com
+  smtpEmail: d_zhao_work@163.com
+  smtpPassword: SCIKEWUPWKEVSNJP
+
+uploadPath:
+  host: http://127.0.0.1
+  tempPath: static/temp/
+  avatarPath : static/imgs/avatar/
+  videoPath: static/video/
+  musicPath: static/music/
+  imagePath: static/imgs/
+  docPath: static/doc/
+  programPath: static/program/
+  zipPath: static/zip/
+  othersPath: static/others/

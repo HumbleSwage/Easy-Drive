@@ -1,21 +1,21 @@
 package consts
 
-type category int
+type fileCategory int
 
 const (
-	Video category = iota
-	Music
-	Image
-	Doc
-	Others
+	VideoCategory fileCategory = iota + 1
+	MusicCategory
+	ImageCategory
+	DocCategory
+	OthersCategory
 )
 
-var CategoryStr = []string{"video", "music", "image", "doc", "others"}
+var fileCategoryStr = []string{"video", "music", "image", "doc", "others"}
 
-func (c category) String() string {
-	return CategoryStr[c]
+func (c fileCategory) String() string {
+	return fileCategoryStr[c-1]
 }
 
-func (c category) Index() int {
+func (c fileCategory) Index() int {
 	return int(c)
 }

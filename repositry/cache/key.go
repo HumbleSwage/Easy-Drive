@@ -9,3 +9,11 @@ func VerificationCodeCacheKey(kind int, email string) string {
 func UserStoreSpaceKey(userId, fileName string) string {
 	return fmt.Sprintf("UserStoreSpaceKey:%s:%s", userId, fileName)
 }
+
+func DownloadFileKey(userId, downloadCode string) string {
+	return fmt.Sprintf("DownloadFileKey:%s:%s", userId, downloadCode)
+}
+
+func ShareFileKey(shareId string) string {
+	return fmt.Sprintf("ShareFileKey:%s", shareId)
+}

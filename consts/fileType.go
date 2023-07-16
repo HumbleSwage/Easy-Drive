@@ -3,46 +3,37 @@ package consts
 type fileType int
 
 const (
-	// 音频
-	MP3 fileType = iota
-	WAV
-	FLAC
-	AAC
-	OGG
-	WMA
-
-	// 视频
-	MP4
-	AVI
-	MKV
-	MOV
-	WMV
-	FLV
-
-	// 图片
-	JPG
-	JPEG
-	PNG
-	GIF
-	BMP
-	TIFF
-	SVG
-
-	// 文档
+	VIDEO fileType = iota + 1
+	MUSIC
+	IMAGE
 	PDF
-	DOCX
-	XLSX
-	PPTX
+	WORD
+	EXCEL
 	TXT
-	CSV
+	PROGRAM
+	ZIP
+	OTHERS
 )
 
-var TypeStr = []string{"mp3", "wav", "flac", "aac", "ogg", "mp4", "avi", "mkv", "mov", "wmv", "flv", "jpg", "jpeg", "png", "gif", "bmp", "tiff", "svg", "pdf", "docx", "xlsx", "pptx", "txt", "csv"}
+var CategoryStr = []string{"video", "music", "image", "pdf", "word", "excel", "txt", "program", "zip", "others"}
 
-func (f fileType) String() string {
-	return TypeStr[f]
+func (c fileType) String() string {
+	return CategoryStr[c-1]
 }
 
-func (f fileType) Index() int {
-	return int(f)
+func (c fileType) Index() int {
+	return int(c)
+}
+
+var TypeMapping = map[int][]string{
+	VIDEO.Index():   {"mp4", "avi", "rmvb", "mkv", "mov"},
+	MUSIC.Index():   {"mp3", "wav", "wma", "mp2", "flac", "midi", "ra", "ape", "aac", "cda"},
+	IMAGE.Index():   {"jpeg", "jpg", "png", "gif", "bmp", "dds", "psd", "pdt", "webp", "xmp", "svg", "tiff"},
+	PDF.Index():     {"pdf"},
+	WORD.Index():    {"docx"},
+	EXCEL.Index():   {"xlsx"},
+	TXT.Index():     {"txt"},
+	PROGRAM.Index(): {"h", "c", "hpp", "hxx", "cpp", "cc", "c++", "m", "o", "s", "dll", "cs", "java", "class", "js", "ts", "css", "scss", "vue", "jsx", "sql", "md", "json", "html", "xml"},
+	ZIP.Index():     {"rar", "zip", "7z", "cab", "arj", "lzh", "tar", "gz", "ace", "uue", "bz", "jar", "iso", "mpq"},
+	OTHERS.Index():  {},
 }

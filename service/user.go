@@ -13,10 +13,15 @@ import (
 	"easy-drive/repositry/dao"
 	"easy-drive/repositry/model"
 	"easy-drive/types"
+	"errors"
 	"fmt"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/cast"
+	"github.com/spf13/viper"
+	"gorm.io/gorm"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -59,6 +64,16 @@ func (us *UserService) UserRegister(ctx context.Context, req *types.UserRegister
 		return ctl.RespError(code), nil
 	}
 
+	// 查询系统设置
+	systemSetting := dao.NewSystemDaoByDB(userDao.DB)
+	setting, err := systemSetting.GetSystemSettingById(consts.UserInitSpaceId)
+	if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			utils.LogrusObj.Error("获取用户默认内存出错：", err)
+			return ctl.RespError(), nil
+		}
+	}
+
 	// 邮箱校验通过,注册用户到数据库
 	userId := commonUtil.GenerateUserID() // 生成用户id
 	user := &model.User{
@@ -67,7 +82,7 @@ func (us *UserService) UserRegister(ctx context.Context, req *types.UserRegister
 		NickName:   req.NickName,
 		Email:      req.Email,
 		Status:     1,
-		TotalSpace: consts.UserInitSpace * 1024 * 1024 * 1024, // 内存单位为G
+		TotalSpace: cast.ToInt64(setting.Text) * 1024 * 1024, // 内存单位为G
 	}
 
 	// 密码加密
@@ -160,12 +175,38 @@ func (us *UserService) UserLogin(ctx *gin.Context, req *types.UserLoginReq) (res
 		return ctl.RespError(code), nil
 	}
 
+	// 获取当前工作目录
+	workDir, _ := os.Getwd()
+
+	// 设置配置文件路径
+	configFile := filepath.Join(workDir, "conf/local/whiteList.yaml")
+	viper.SetConfigFile(configFile)
+
+	// 读取配置文件
+	err = viper.ReadInConfig()
+	if err != nil {
+		fmt.Println("Failed to read configuration file:", err)
+		return
+	}
+
+	// 从配置文件中获取白名单数据
+	whitelist := viper.GetStringSlice("whiteList")
+
+	// 检查该用户email是否在白名单中
+	admin := false
+	for _, mailAddress := range whitelist {
+		if mailAddress == user.Email {
+			admin = true
+			break
+		}
+	}
 	// 绑定返回数据
 	data := types.UserLoginResp{
 		UserId:    user.UserId,
 		NickName:  user.NickName,
 		Authority: user.Authority,
 		Token:     token,
+		Admin:     admin,
 	}
 
 	return ctl.RespSuccessWithData(data), nil
@@ -233,8 +274,11 @@ func (us *UserService) GetUserAvatar(ctx context.Context, userId string) (resp i
 	userDao := dao.NewUserDao(ctx)
 	user, err := userDao.GetUserByUserId(userId)
 	if err != nil {
-		utils.LogrusObj.Error("根据用户id获取用户出错:", err)
-		return nil, err
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			utils.LogrusObj.Error("根据用户id获取用户出错:", err)
+			utils.LogrusObj.Error("用户id:", userId)
+			return ctl.RespError(), nil
+		}
 	}
 
 	// 图片位置
@@ -250,24 +294,27 @@ func (us *UserService) GetUserAvatar(ctx context.Context, userId string) (resp i
 		avatarPath = pConfig.AvatarPath + user.Avatar
 	}
 
+	// 获取文件路径
+	workDir, _ := os.Getwd()
+	avatarPath = filepath.Join(workDir, avatarPath)
 	fileInfo, err := os.Stat(avatarPath)
 	if os.IsNotExist(err) {
 		utils.LogrusObj.Error("头像不存在:", err)
-		return nil, err
+		return ctl.RespError(), nil
 	}
 
 	// 打开文件
 	file, err := os.OpenFile(avatarPath, os.O_RDONLY, os.ModeAppend)
 	if err != nil {
 		utils.LogrusObj.Error("打开头像文件出错:", err)
-		return nil, err
+		return ctl.RespError(), nil
 	}
 
 	// 创建缓冲流，并读入
 	content = make([]byte, fileInfo.Size())
 	if _, err := file.Read(content); err != nil {
 		utils.LogrusObj.Error("文件对象写出错:", err)
-		return nil, err
+		return ctl.RespError(), nil
 	}
 
 	// 返回文件字节流

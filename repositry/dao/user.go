@@ -5,6 +5,7 @@ import (
 	"easy-drive/repositry/model"
 	"errors"
 	"gorm.io/gorm"
+	"strings"
 )
 
 type UserDao struct {
@@ -47,6 +48,30 @@ func (ud *UserDao) IsUserNameExists(userName string) bool {
 func (ud *UserDao) AddUser(u *model.User) (err error) {
 	err = ud.DB.Model(&model.User{}).Create(&u).Error
 	return err
+}
+
+func (ud *UserDao) SelectUser(status []string, pageSize, pageNum int) (users []*model.User, count int64, err error) {
+	err = ud.DB.Model(&model.User{}).Where("status IN ?", status).Find(&users).
+		Offset((pageNum - 1) * pageSize).Limit(pageSize).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	err = ud.DB.Model(&model.User{}).Where("status IN ?", status).Count(&count).Error
+	return
+}
+
+func (ud *UserDao) SelectUserByFuzzy(status []string, nickNameFuzzy string, pageSize, pageNum int) (users []*model.User, count int64, err error) {
+	err = ud.DB.Model(&model.User{}).Where("status IN ?", status).
+		Where("nick_name LIKE ?", strings.Join([]string{"%", nickNameFuzzy, "%"}, "")).
+		Offset((pageNum - 1) * pageSize).Limit(pageSize).
+		Find(&users).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	err = ud.DB.Model(&model.User{}).Where("status IN ?", status).
+		Where("nick_name LIKE ?", strings.Join([]string{"%", nickNameFuzzy, "%"}, "")).
+		Count(&count).Error
+	return
 }
 
 func (ud *UserDao) GetUserByEmail(email string) (user *model.User, err error) {

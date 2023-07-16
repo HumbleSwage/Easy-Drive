@@ -7,6 +7,8 @@ func migration() {
 		AutoMigrate(
 			&model.User{},
 			&model.File{},
+			&model.Share{},
+			&model.System{},
 		)
 	if err != nil {
 		panic(err)

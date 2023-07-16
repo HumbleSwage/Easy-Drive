@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os/exec"
 	"regexp"
+	"strings"
 	"testing"
 )
 
@@ -48,7 +49,7 @@ func TestGenerateThumbnailName(t *testing.T) {
 
 func TestSplitVideoByPercentage(t *testing.T) {
 	file := "/Users/zhaodeng/Desktop/ff/电竞视频.mp4"
-	err := fileUtil.SplitVideoByPercentage(file)
+	err := fileUtil.SplitVideo(file)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -60,9 +61,8 @@ func TestCreateDir(t *testing.T) {
 
 func TestGetUniqueFileName(t *testing.T) {
 	conf.InitConfig()
-	filePath, fileName := fileUtil.GetUniqueFileName("电竞视频1.mp4", "a83809b4cdc6")
+	filePath := fileUtil.GetFilePath("电竞视频1.mp4", "a83809b4cdc6", "电竞视频1.mp4")
 	fmt.Println(filePath)
-	fmt.Println(fileName)
 }
 
 func TestGetUniqueFileName123(t *testing.T) {
@@ -70,4 +70,13 @@ func TestGetUniqueFileName123(t *testing.T) {
 	pattern := `^chunk_\d+_.+$`
 	regExp, _ := regexp.Compile(pattern)
 	fmt.Println(regExp.MatchString(file))
+}
+
+func TestGetFileExtension(t *testing.T) {
+	parts := strings.Split("test.mp4", ".")
+	if len(parts) > 1 {
+		fmt.Println(parts[len(parts)-1])
+	} else {
+		fmt.Println("出错")
+	}
 }

@@ -1,3 +1,0 @@
-time="2023-06-20 17:00:32" level=error msg="断言用户id出错" func="easy-drive/service.(*UserService).GetUserSpace" file="/Users/zhaodeng/GolandProjects/Easy-Drive/service/user.go:258"
-time="2023-06-20 19:13:25" level=error msg="根据用户id获取用户出错:record not found" func="easy-drive/service.(*UserService).GetUserAvatar" file="/Users/zhaodeng/GolandProjects/Easy-Drive/service/user.go:205"
-time="2023-06-20 19:20:06" level=error msg="根据用户id获取用户出错:record not found" func="easy-drive/service.(*UserService).GetUserAvatar" file="/Users/zhaodeng/GolandProjects/Easy-Drive/service/user.go:205"

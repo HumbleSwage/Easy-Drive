@@ -1,2 +1,0 @@
-time="2023-06-24 16:38:48" level=error msg="通过文件md5值查询文件出错:record not found" func="easy-drive/service.(*FileService).UploadFileService" file="/Users/zhaodeng/GolandProjects/Easy-Drive/service/file.go:189"
-time="2023-06-24 16:53:05" level=error msg="创建文件出错:Error 1292 (22007): Incorrect datetime value: '0000-00-00' for column 'restored_at' at row 1" func="easy-drive/service.(*FileService).UploadFileService" file="/Users/zhaodeng/GolandProjects/Easy-Drive/service/file.go:214"
